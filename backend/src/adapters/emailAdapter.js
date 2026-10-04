@@ -8,9 +8,11 @@ const getTransporter = () => {
 
   transporter = nodemailer.createTransport({
     host: 'smtp.gmail.com',
-    port: 465,
-    secure: true,
+    port: 587,
+    secure: false,
+    requireTLS: true,
     family: 4,
+    connectionTimeout: 10000,
     auth: {
       user: env.GMAIL_USER,
       pass: env.GMAIL_APP_PASSWORD,
@@ -19,7 +21,6 @@ const getTransporter = () => {
 
   return transporter;
 };
-
 const sendEmail = async ({ to, subject, body }) => {
   if (!env.GMAIL_USER || !env.GMAIL_APP_PASSWORD) {
     throw new Error('Gmail credentials not configured (GMAIL_USER / GMAIL_APP_PASSWORD)');
