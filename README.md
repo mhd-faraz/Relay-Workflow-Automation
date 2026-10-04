@@ -360,6 +360,98 @@ Ensure these are configured before release:
 - Optional Gmail SMTP credentials for email nodes
 - Allowed frontend origins in CORS configuration
 
+## Deployment guide
+
+Relay is an AI workflow orchestration application with a frontend client, an Express API, a Redis-backed job queue, and a background worker that executes queued workflow runs.
+
+### Architecture
+
+The runtime model of this project is split into four major components:
+
+- Frontend: React + Vite application for workflow creation and run monitoring
+- Backend API: Node.js + Express service for authentication, workflow management, webhook ingestion, and run orchestration
+- Queue: Redis + BullMQ for reliable background job processing
+- Worker: background process started by the backend service to execute workflow jobs and persist state changes
+- Database: MongoDB for users, workflows, runs, steps, approvals, and execution metadata
+
+A simple deployment view looks like this:
+
+```mermaid
+flowchart LR
+    User[User / Browser] --> FE[Frontend\nVercel]
+    FE --> API[Backend API\nRender / Node.js]
+    API --> DB[(MongoDB Atlas)]
+    API --> Q[(Redis / BullMQ)]
+    Q --> W[Workflow Worker]
+    W --> AI[AI Providers\nGroq / OpenAI / Gemini]
+    W --> MAIL[Email Service\nGmail SMTP]
+```
+
+### Recommended deployment setup
+
+The project has been designed to work well with a common managed hosting stack:
+
+| Component | Recommended platform | Notes |
+|---|---|---|
+| Frontend | Vercel | Host the static React build from the frontend project |
+| Backend API | Render | Deploy the Express backend and ensure it has access to MongoDB and Redis |
+| Database | MongoDB Atlas | Use a managed MongoDB instance for production data |
+| Redis | Redis hosted service or Render service | Required for BullMQ queue processing |
+| Worker | Same backend runtime or separate service | Must be started with the application process and listen to the queue |
+
+> Keep deployment claims accurate. Only list a service as deployed if it is actually running in your environment. For example, the repo supports Redis-backed queue execution and worker processing, but the hosting choice should match the environment you are actually using.
+
+### Local development
+
+Run the full stack locally from the project root:
+
+```bash
+docker compose up --build
+```
+
+This starts the Redis container, backend API, and frontend container using the project Docker configuration.
+
+### Required environment variables
+
+Before starting the app, make sure the following environment values are present:
+
+```env
+PORT=3000
+NODE_ENV=development
+MONGODB_URI=mongodb://localhost:27017/relay
+REDIS_HOST=localhost
+REDIS_PORT=6379
+AI_PROVIDER=groq
+OPENAI_API_KEY=
+GEMINI_API_KEY=
+GROQ_API_KEY=
+GMAIL_USER=
+GMAIL_APP_PASSWORD=
+JWT_SECRET=change_this_in_production
+MAX_STEPS_PER_RUN=100
+```
+
+### Deployment checklist
+
+1. Configure `MONGODB_URI` for your production database.
+2. Configure Redis and set `REDIS_HOST` and `REDIS_PORT` appropriately.
+3. Set a long, secure `JWT_SECRET` value.
+4. Configure the required AI provider key for the selected `AI_PROVIDER`.
+5. Add Gmail SMTP credentials only if email approval workflows are enabled.
+6. Keep CORS and allowed origins limited to your trusted frontend domain.
+7. Run the app health check and verify the `/health` endpoint responds successfully.
+8. Test workflow triggering and approval flow before production use.
+
+### Deployment notes
+
+This project is built around reliability and safe automation rather than simple script execution. In production, the most important concerns are:
+
+- durable database state for workflows and runs
+- queue-based separation between API requests and long-running jobs
+- approval enforcement before side effects run
+- safe logging and environment secret management
+- proper Redis and MongoDB configuration for hosted environments
+
 ## License
 
 This project is currently distributed under the ISC license unless otherwise stated in the repository.
