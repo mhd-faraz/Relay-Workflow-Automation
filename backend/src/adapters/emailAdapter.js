@@ -21,6 +21,7 @@ const getTransporter = () => {
 
   return transporter;
 };
+
 const sendEmail = async ({ to, subject, body }) => {
   if (!env.GMAIL_USER || !env.GMAIL_APP_PASSWORD) {
     throw new Error('Gmail credentials not configured (GMAIL_USER / GMAIL_APP_PASSWORD)');
