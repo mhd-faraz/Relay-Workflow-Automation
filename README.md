@@ -4,9 +4,9 @@
 
 **Compose, run, pause, approve and audit AI-powered workflows — durably, safely, and without ever repeating a side effect.**
 
-[Live Demo](https://relay-workflow-automation.vercel.app/) · [API Health](https://relay-workflow-automation.onrender.com/health) · [Node.js](https://nodejs.org/) · [MongoDB](https://www.mongodb.com/atlas) · [BullMQ](https://docs.bullmq.io/) · [Docker](https://docs.docker.com/compose/)
+[Live Demo](https://relay-workflow-automation.vercel.app/workflows) · [API Health](https://relay-workflow-automation.onrender.com/health) · [Node.js](https://nodejs.org/) · [MongoDB](https://www.mongodb.com/atlas) · [BullMQ](https://docs.bullmq.io/) · [Docker](https://docs.docker.com/compose/)
 
-[**Live App**](https://relay-workflow-automation.vercel.app/) · [**API Health**](https://relay-workflow-automation.onrender.com/health) · [**Source Code**](https://github.com/mhd-faraz/Relay-Workflow-Automation)
+[**Live App**](https://relay-workflow-automation.vercel.app/workflows) · [**API Health**](https://relay-workflow-automation.onrender.com/health) · [**Source Code**](https://github.com/mhd-faraz/Relay-Workflow-Automation)
 
 </div>
 
@@ -16,7 +16,8 @@
 
 | Resource | URL |
 |---|---|
-| Frontend (Vercel) | https://relay-workflow-automation.vercel.app/ |
+| Frontend workflows (Vercel) | https://relay-workflow-automation.vercel.app/workflows |
+| Frontend app (Vercel) | https://relay-workflow-automation.vercel.app/ |
 | Backend API + Worker + Redis (Render) | https://relay-workflow-automation.onrender.com/ |
 | Backend health check | https://relay-workflow-automation.onrender.com/health |
 | GitHub repository | https://github.com/mhd-faraz/Relay-Workflow-Automation |
