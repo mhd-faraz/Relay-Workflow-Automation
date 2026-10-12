@@ -1,5 +1,6 @@
 const Approval = require('../models/Approval');
 const Run = require('../models/Run');
+const User = require('../models/User');
 const { getQueue } = require('../workers/workflowWorker');
 
 // GET /api/approvals?status=pending
@@ -27,7 +28,7 @@ const listApprovals = async (req, res) => {
 // POST /api/approvals/:id/resolve
 const resolveApproval = async (req, res) => {
   try {
-    const { action, resolvedBy, comment } = req.body;
+    const { action, comment } = req.body;
 
     if (!['approved', 'rejected'].includes(action)) {
       return res.status(400).json({ success: false, error: 'action must be approved or rejected' });
@@ -45,9 +46,14 @@ const resolveApproval = async (req, res) => {
       return res.status(400).json({ success: false, error: 'Approval already resolved' });
     }
 
+    const reviewer = await User.findById(req.userId).select('email');
+    if (!reviewer) {
+      return res.status(401).json({ success: false, error: 'Authenticated reviewer no longer exists' });
+    }
+
     approval.status = action;
     approval.resolvedAt = new Date();
-    approval.resolvedBy = resolvedBy || 'human';
+    approval.resolvedBy = reviewer.email;
     approval.comment = comment || null;
     await approval.save();
 

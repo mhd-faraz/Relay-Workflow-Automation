@@ -1,9 +1,9 @@
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import StatusBadge from './StatusBadge';
-import { Clock, Zap, Hash } from 'lucide-react';
+import { Clock, Zap, Hash, Trash2 } from 'lucide-react';
 
-const RunCard = ({ run }) => {
+const RunCard = ({ run, onDelete, deleting = false }) => {
   const navigate = useNavigate();
 
   const timeAgo = (date) => {
@@ -80,6 +80,21 @@ const RunCard = ({ run }) => {
           {run.stepCount || 0} steps
         </span>
         <StatusBadge status={run.status} />
+        {run.status === 'failed' && onDelete && (
+          <button
+            type="button"
+            aria-label={`Delete failed run ${run._id.slice(-8)}`}
+            title="Delete failed run"
+            disabled={deleting}
+            onClick={(event) => {
+              event.stopPropagation();
+              onDelete(run);
+            }}
+            style={{ display: 'flex', alignItems: 'center', padding: 7, borderRadius: 6, background: 'var(--danger-light)', color: 'var(--danger)' }}
+          >
+            <Trash2 size={14} />
+          </button>
+        )}
       </div>
     </motion.div>
   );

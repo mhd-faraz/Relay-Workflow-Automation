@@ -50,28 +50,19 @@ const Sidebar = () => {
         zIndex: 100,
       }}
     >
-      {/* Logo */}
-      <div style={{
-        padding: '22px 20px 18px',
-        borderBottom: '1px solid var(--border)',
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '11px' }}>
-          <div style={{
-            width: 34,
-            height: 34,
-            background: 'linear-gradient(135deg, var(--accent), var(--accent-hover))',
-            borderRadius: 9,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            boxShadow: '0 4px 12px var(--accent-light)',
-          }}>
-            <Zap size={18} color="white" fill="white" />
+      <div className="sidebar-brand">
+        <div className="sidebar-brand-main">
+          <div className="sidebar-brand-mark">
+            <Zap size={27} color="white" fill="white" />
           </div>
-          <div>
-            <div style={{ fontSize: '17px', fontWeight: 700, color: 'var(--text-primary)', letterSpacing: '-0.3px' }}>Relay</div>
-            <div style={{ fontSize: '10px', color: 'var(--text-muted)', letterSpacing: '0.8px', fontWeight: 500 }}>WORKFLOW ENGINE</div>
+          <div className="sidebar-brand-copy">
+            <div className="sidebar-brand-name">Relay</div>
+            <div className="sidebar-brand-product">Workflow Engine</div>
           </div>
+        </div>
+        <div className="sidebar-brand-caption">
+          <span>AI-POWERED AUTOMATION</span>
+          <span className="sidebar-brand-signal"><i /><i /><i /></span>
         </div>
       </div>
 

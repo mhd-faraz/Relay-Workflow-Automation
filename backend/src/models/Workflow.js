@@ -5,7 +5,7 @@ const nodeSchema = new mongoose.Schema({
   type: {
     type: String,
     required: true,
-    enum: ['http_request', 'condition', 'delay', 'notify', 'ai', 'approval', 'email'],
+    enum: ['http_request', 'condition', 'delay', 'notify', 'ai', 'approval', 'expense_claim'],
   },
   name: { type: String, required: true },
   config: { type: mongoose.Schema.Types.Mixed, default: {} },
@@ -31,6 +31,7 @@ const workflowSchema = new mongoose.Schema({
   },
   webhookSecret: { type: String, default: null },
   nodes: { type: [nodeSchema], default: [] },
+  inputSchema: { type: mongoose.Schema.Types.Mixed, default: null },
   entryNodeId: { type: String, default: null },
   publishedAt: { type: Date, default: null },
   publishedDefinition: { type: mongoose.Schema.Types.Mixed, default: null },

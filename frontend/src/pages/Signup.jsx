@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import { Zap, Mail, Lock, User } from 'lucide-react';
 import { signup as signupApi } from '../services/api';
 import { useAuth } from '../context/AuthContext';
+import ThemeToggle from '../components/ThemeToggle';
 
 const Signup = () => {
   const navigate = useNavigate();
@@ -36,6 +37,7 @@ const Signup = () => {
       justifyContent: 'center',
       background: 'var(--bg-primary)',
     }}>
+      <div className="public-theme-toggle"><ThemeToggle compact /></div>
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -101,6 +103,8 @@ const Signup = () => {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
+                maxLength={254}
+                autoComplete="email"
                 placeholder="you@example.com"
                 style={{
                   width: '100%', padding: '10px 12px 10px 36px', borderRadius: 8,
@@ -109,6 +113,9 @@ const Signup = () => {
                 }}
               />
             </div>
+            <p style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 6 }}>
+              We check the address format; inbox ownership is not currently verified.
+            </p>
           </div>
 
           <div style={{ marginBottom: 24 }}>

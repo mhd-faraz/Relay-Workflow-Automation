@@ -44,13 +44,14 @@ export const deleteWorkflow = (id) => api.delete(`/workflows/${id}`);
 export const getRuns = (params) => api.get('/runs', { params });
 export const getRun = (id) => api.get(`/runs/${id}`);
 export const getRunSteps = (id) => api.get(`/runs/${id}/steps`);
+export const deleteFailedRun = (id) => api.delete(`/runs/${id}`);
 export const triggerRun = (workflowId, input) =>
   api.post(`/workflows/${workflowId}/trigger`, { input });
 
 // ─── Approvals ───────────────────────────────────────────────────
 export const getApprovals = (status) =>
   api.get('/approvals', { params: { status } });
-export const resolveApproval = (id, action, resolvedBy, comment) =>
-  api.post(`/approvals/${id}/resolve`, { action, resolvedBy, comment });
+export const resolveApproval = (id, action, comment) =>
+  api.post(`/approvals/${id}/resolve`, { action, comment });
 
 export default api;

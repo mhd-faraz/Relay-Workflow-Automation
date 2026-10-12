@@ -5,6 +5,7 @@ const morgan = require('morgan');
 
 const { connectDB } = require('./config/db');
 const { getRedisClient } = require('./config/redis');
+const { upsertBuiltinWorkflows } = require('../seeds/demoWorkflows');
 const env = require('./config/env');
 const errorHandler = require('./middleware/errorHandler');
 const rateLimiter = require('./middleware/rateLimiter');
@@ -13,7 +14,7 @@ const authMiddleware = require('./middleware/auth');
 const authRoutes = require('./routes/auth.routes');
 const workflowRoutes = require('./routes/workflow.routes');
 const approvalRoutes = require('./routes/approval.routes');
-const { triggerRun, webhookTrigger, listRuns, getRun, getRunSteps } = require('./controllers/run.controller');
+const { triggerRun, webhookTrigger, listRuns, getRun, getRunSteps, deleteFailedRun } = require('./controllers/run.controller');
 
 const app = express();
 
@@ -43,6 +44,7 @@ app.post('/api/workflows/:id/trigger', authMiddleware, triggerRun);
 app.get('/api/runs', authMiddleware, listRuns);
 app.get('/api/runs/:id', authMiddleware, getRun);
 app.get('/api/runs/:id/steps', authMiddleware, getRunSteps);
+app.delete('/api/runs/:id', authMiddleware, deleteFailedRun);
 
 // ─── 404 Handler ─────────────────────────────────────────────────
 app.use((req, res) => {
@@ -56,6 +58,7 @@ app.use(errorHandler);
 const start = async () => {
   try {
     await connectDB();
+    await upsertBuiltinWorkflows();
 
     const redis = getRedisClient();
     await redis.connect();

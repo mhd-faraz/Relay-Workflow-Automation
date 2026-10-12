@@ -14,9 +14,6 @@ const env = {
   GEMINI_API_KEY: process.env.GEMINI_API_KEY || '',
   GROQ_API_KEY: process.env.GROQ_API_KEY || '',
 
-  GMAIL_USER: process.env.GMAIL_USER || '',
-  GMAIL_APP_PASSWORD: process.env.GMAIL_APP_PASSWORD || '',
-
   JWT_SECRET: process.env.JWT_SECRET || 'relay-dev-secret-change-in-production',
 
   MAX_STEPS_PER_RUN: parseInt(process.env.MAX_STEPS_PER_RUN) || 100,

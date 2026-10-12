@@ -1,6 +1,7 @@
 const axios = require('axios');
 const env = require('../config/env');
-const { sendEmail } = require('../adapters/emailAdapter');
+const Approval = require('../models/Approval');
+const ExpenseClaim = require('../models/ExpenseClaim');
 
 const TIMEOUT_MS = 10000;
 
@@ -61,18 +62,59 @@ const runNotify = async (config, input) => {
   return { notified: true, channel, message };
 };
 
-// ─── Email Node ──────────────────────────────────────────────────
-const runEmailNode = async (config, input) => {
-  const to = resolveTemplate(config.to, input);
-  const subject = resolveTemplate(config.subject, input);
-  const body = resolveTemplate(config.body, input);
+const runExpenseClaim = async (config, input, { runId, userId }) => {
+  const fields = resolveTemplateObj(config.fields, input);
+  const requiresApproval = fields.amount > config.autoApprovalLimit;
+  let approval = null;
 
-  if (!to || !to.includes('@')) {
-    throw new Error(`Invalid recipient email: "${to}"`);
+  if (config.approvalNodeId) {
+    approval = await Approval.findOne({ runId, nodeId: config.approvalNodeId });
   }
 
-  const result = await sendEmail({ to, subject, body });
-  return result;
+  if (approval?.status === 'rejected') {
+    throw new Error('Rejected expense claim cannot be recorded');
+  }
+  if (requiresApproval && approval?.status !== 'approved') {
+    throw new Error('Expense claims above the auto-approval limit require manager approval');
+  }
+
+  const status = requiresApproval ? 'approved' : 'auto_approved';
+  let claim;
+  try {
+    claim = await ExpenseClaim.findOneAndUpdate(
+      { runId, nodeId: config.nodeId },
+      {
+        $setOnInsert: {
+          runId,
+          userId,
+          nodeId: config.nodeId,
+          ...fields,
+          currency: 'INR',
+          status,
+          approvedBy: approval?.resolvedBy || null,
+          approvedAt: approval?.resolvedAt || null,
+        },
+      },
+      { new: true, upsert: true, runValidators: true }
+    );
+  } catch (error) {
+    if (error.code === 11000 && error.keyPattern?.claimReference) {
+      throw new Error(`Expense claim reference "${fields.claimReference}" has already been used`);
+    }
+    throw error;
+  }
+
+  return {
+    expenseClaim: {
+      recordId: claim._id.toString(),
+      claimReference: claim.claimReference,
+      status: claim.status,
+      amount: claim.amount,
+      currency: claim.currency,
+      approvedBy: claim.approvedBy,
+      createdAt: claim.createdAt,
+    },
+  };
 };
 
 // ─── AI Node ─────────────────────────────────────────────────────
@@ -121,7 +163,7 @@ const runApprovalNode = async (config, runId, nodeId, nodeName, input, ApprovalM
   const existing = await ApprovalModel.findOne({ runId, nodeId });
 
   if (existing && existing.status === 'approved') {
-    return { approved: true, resolvedBy: existing.resolvedBy };
+    return { approval: { approved: true, resolvedBy: existing.resolvedBy } };
   }
 
   if (existing && existing.status === 'rejected') {
@@ -190,7 +232,7 @@ module.exports = {
   runCondition,
   runDelay,
   runNotify,
-  runEmailNode,
+  runExpenseClaim,
   runAiNode,
   runApprovalNode,
   validateAgainstSchema,

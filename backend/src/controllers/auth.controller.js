@@ -1,6 +1,7 @@
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 const env = require('../config/env');
+const { isValidEmail } = require('../utils/emailValidation');
 
 const generateToken = (userId) => {
   return jwt.sign({ userId }, env.JWT_SECRET, { expiresIn: '7d' });
@@ -11,20 +12,31 @@ const signup = async (req, res) => {
   try {
     const { name, email, password } = req.body;
 
-    if (!name || !email || !password) {
+    if (
+      typeof name !== 'string'
+      || !name.trim()
+      || typeof email !== 'string'
+      || typeof password !== 'string'
+      || !password
+    ) {
       return res.status(400).json({ success: false, error: 'Name, email, and password are required' });
+    }
+
+    if (!isValidEmail(email)) {
+      return res.status(400).json({ success: false, error: 'Please provide a valid email address' });
     }
 
     if (password.length < 6) {
       return res.status(400).json({ success: false, error: 'Password must be at least 6 characters' });
     }
 
-    const existing = await User.findOne({ email: email.toLowerCase() });
+    const normalizedEmail = email.trim().toLowerCase();
+    const existing = await User.findOne({ email: normalizedEmail });
     if (existing) {
       return res.status(409).json({ success: false, error: 'Email already registered' });
     }
 
-    const user = await User.create({ name, email, password });
+    const user = await User.create({ name: name.trim(), email: normalizedEmail, password });
     const token = generateToken(user._id);
 
     res.status(201).json({ success: true, data: { user, token } });
@@ -38,11 +50,15 @@ const login = async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    if (!email || !password) {
+    if (typeof email !== 'string' || !password) {
       return res.status(400).json({ success: false, error: 'Email and password are required' });
     }
 
-    const user = await User.findOne({ email: email.toLowerCase() });
+    if (!isValidEmail(email)) {
+      return res.status(400).json({ success: false, error: 'Please provide a valid email address' });
+    }
+
+    const user = await User.findOne({ email: email.trim().toLowerCase() });
     if (!user) {
       return res.status(401).json({ success: false, error: 'Invalid email or password' });
     }

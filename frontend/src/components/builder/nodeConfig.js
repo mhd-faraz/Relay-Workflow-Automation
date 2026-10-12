@@ -1,4 +1,4 @@
-import { Sparkles, GitBranch, Globe, Clock, Bell, CheckSquare, Play, Mail } from 'lucide-react';
+import { Sparkles, GitBranch, Globe, Clock, Bell, CheckSquare, Play } from 'lucide-react';
 
 export const NODE_TYPES = {
   trigger: {
@@ -69,23 +69,10 @@ export const NODE_TYPES = {
     bg: '#22c55e20',
     description: 'Send a notification',
     fields: [
-      { key: 'channel', label: 'Channel', type: 'select', options: ['console', 'slack', 'email'] },
+      { key: 'channel', label: 'Channel', type: 'select', options: ['console', 'slack'] },
       { key: 'message', label: 'Message', type: 'textarea', placeholder: 'Order {{payload.orderId}} processed' },
     ],
     defaultConfig: { channel: 'console', message: '' },
-  },
-  email: {
-    label: 'Send Email',
-    icon: Mail,
-    color: '#ec4899',
-    bg: '#ec489920',
-    description: 'Send a real email via Gmail',
-    fields: [
-      { key: 'to', label: 'To (recipient email)', type: 'text', placeholder: 'receiver@example.com or {{payload.to}}' },
-      { key: 'subject', label: 'Subject', type: 'text', placeholder: 'Subject line here' },
-      { key: 'body', label: 'Body', type: 'textarea', placeholder: 'Email content... use {{parsed.field}} for AI-generated content' },
-    ],
-    defaultConfig: { to: '', subject: '', body: '' },
   },
   approval: {
     label: 'Approval Gate',
@@ -100,4 +87,4 @@ export const NODE_TYPES = {
   },
 };
 
-export const PALETTE_ITEMS = ['ai', 'condition', 'http_request', 'delay', 'notify', 'email', 'approval'];
+export const PALETTE_ITEMS = ['ai', 'condition', 'http_request', 'delay', 'notify', 'approval'];

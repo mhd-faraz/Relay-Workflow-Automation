@@ -1,7 +1,12 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
+import { useCallback, useState } from 'react';
+import { AnimatePresence, motion } from 'framer-motion';
+import { Zap } from 'lucide-react';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { ThemeProvider } from './context/ThemeProvider';
 import Sidebar from './components/Sidebar';
+import ThemeToggle from './components/ThemeToggle';
+import IntroScreen from './components/IntroScreen';
 import Dashboard from './pages/Dashboard';
 import Workflows from './pages/Workflows';
 import Runs from './pages/Runs';
@@ -20,7 +25,15 @@ const Layout = ({ children }) => (
       padding: '32px',
       maxWidth: 'calc(100vw - var(--sidebar-width))',
       overflowX: 'hidden',
+      transition: 'background-color 280ms ease, color 280ms ease',
     }}>
+      <div className="page-toolbar">
+        <div className="page-toolbar-brand">
+          <span className="brand-mark brand-mark-small"><Zap size={14} fill="currentColor" /></span>
+          <span>RELAY <i>/</i> WORKSPACE</span>
+        </div>
+        <ThemeToggle compact />
+      </div>
       <motion.div
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
@@ -66,11 +79,25 @@ function AppRoutes() {
 }
 
 function App() {
+  const [showIntro, setShowIntro] = useState(() => {
+    try {
+      return !sessionStorage.getItem('relay_intro_seen');
+    } catch {
+      return true;
+    }
+  });
+  const completeIntro = useCallback(() => setShowIntro(false), []);
+
   return (
     <BrowserRouter>
-      <AuthProvider>
-        <AppRoutes />
-      </AuthProvider>
+      <ThemeProvider>
+        <AuthProvider>
+          <AppRoutes />
+          <AnimatePresence>
+            {showIntro && <IntroScreen key="relay-intro" onComplete={completeIntro} />}
+          </AnimatePresence>
+        </AuthProvider>
+      </ThemeProvider>
     </BrowserRouter>
   );
 }

@@ -23,12 +23,25 @@ const Approvals = () => {
     }
   };
 
-  useEffect(() => { fetchApprovals(); }, [filter]);
+  useEffect(() => {
+    let active = true;
+
+    getApprovals(filter)
+      .then((res) => {
+        if (active) setApprovals(res.data.data || []);
+      })
+      .catch((err) => console.error(err))
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+
+    return () => { active = false; };
+  }, [filter]);
 
   const handleResolve = async (id, action) => {
     setResolving(`${id}-${action}`);
     try {
-      await resolveApproval(id, action, 'admin', `${action} via console`);
+      await resolveApproval(id, action, `${action} via console`);
       setMessage({ type: action === 'approved' ? 'success' : 'error', text: `Request ${action}!` });
       fetchApprovals();
     } catch (err) {
@@ -131,6 +144,27 @@ const Approvals = () => {
                   <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
                     Requested: {new Date(approval.requestedAt).toLocaleString()}
                   </div>
+                  {approval.context && Object.keys(approval.context).length > 0 && (
+                    <details style={{ marginTop: 10 }}>
+                      <summary style={{ cursor: 'pointer', color: 'var(--accent)', fontSize: 12 }}>
+                        Review request details
+                      </summary>
+                      <pre style={{
+                        whiteSpace: 'pre-wrap',
+                        overflowWrap: 'anywhere',
+                        fontSize: 12,
+                        color: 'var(--text-secondary)',
+                        background: 'var(--bg-secondary)',
+                        borderRadius: 6,
+                        padding: 10,
+                        marginTop: 8,
+                        maxHeight: 220,
+                        overflow: 'auto',
+                      }}>
+                        {JSON.stringify(approval.context, null, 2)}
+                      </pre>
+                    </details>
+                  )}
                   {approval.comment && (
                     <div style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '8px', padding: '8px 12px', background: 'var(--bg-hover)', borderRadius: 6 }}>
                       {approval.comment}

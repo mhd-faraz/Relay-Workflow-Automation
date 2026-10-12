@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { getRuns, getWorkflows, getApprovals } from '../services/api';
-import StatusBadge from '../components/StatusBadge';
+import { getRuns, getWorkflows, getApprovals, deleteFailedRun } from '../services/api';
 import RunCard from '../components/RunCard';
 import Loader from '../components/Loader';
 import { Activity, GitBranch, CheckSquare, AlertTriangle } from 'lucide-react';
@@ -46,6 +45,8 @@ const Dashboard = () => {
   const [workflows, setWorkflows] = useState([]);
   const [approvals, setApprovals] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [deletingRunId, setDeletingRunId] = useState(null);
+  const [actionError, setActionError] = useState('');
 
   useEffect(() => {
     const fetchAll = async () => {
@@ -69,10 +70,28 @@ const Dashboard = () => {
     return () => clearInterval(interval);
   }, []);
 
+  const handleDeleteFailedRun = async (run) => {
+    if (!window.confirm(`Delete this failed run for "${run.workflowId?.name || 'Unknown Workflow'}"? This cannot be undone.`)) return;
+    setDeletingRunId(run._id);
+    setActionError('');
+    try {
+      await deleteFailedRun(run._id);
+      setRuns((currentRuns) => currentRuns.filter((currentRun) => currentRun._id !== run._id));
+    } catch (err) {
+      if (err.response?.status === 404 && err.response?.data?.error === 'Route not found') {
+        setActionError('Failed-run deletion is not available on the connected backend yet. Deploy the latest backend, then try again.');
+      } else {
+        setActionError(err.response?.data?.error || 'Could not delete failed run');
+      }
+    } finally {
+      setDeletingRunId(null);
+    }
+  };
+
   if (loading) return <Loader />;
 
   const completed = runs.filter((r) => r.status === 'completed').length;
-  const failed = runs.filter((r) => r.status === 'failed').length;
+  const failedRuns = runs.filter((r) => r.status === 'failed');
   const running = runs.filter((r) => r.status === 'running').length;
 
   return (
@@ -89,7 +108,8 @@ const Dashboard = () => {
         <StatCard icon={GitBranch}   label="Total Workflows"   value={workflows.length} color="var(--accent)"  delay={0}    />
         <StatCard icon={Activity}    label="Total Runs"        value={runs.length}      color="var(--info)"    delay={0.05} />
         <StatCard icon={CheckSquare} label="Completed"         value={completed}        color="var(--success)" delay={0.1}  />
-        <StatCard icon={AlertTriangle} label="Pending Approvals" value={approvals.length} color="var(--warning)" delay={0.15} />
+        <StatCard icon={AlertTriangle} label="Failed Runs"       value={failedRuns.length} color="var(--danger)" delay={0.15} />
+        <StatCard icon={AlertTriangle} label="Pending Approvals" value={approvals.length} color="var(--warning)" delay={0.2}  />
       </div>
 
       {/* Running now */}
@@ -113,6 +133,35 @@ const Dashboard = () => {
           <Activity size={16} />
           <strong>{running} run{running > 1 ? 's' : ''} currently executing...</strong>
         </motion.div>
+      )}
+
+      {failedRuns.length > 0 && (
+        <div style={{
+          background: 'var(--bg-card)',
+          border: '1px solid var(--danger)',
+          borderRadius: 'var(--radius)',
+          padding: '20px',
+          marginBottom: '20px',
+        }}>
+          <h2 style={{ fontSize: '16px', fontWeight: 600, marginBottom: '16px', color: 'var(--text-primary)' }}>
+            Failed Runs ({failedRuns.length})
+          </h2>
+          {actionError && (
+            <div role="alert" style={{ color: 'var(--danger)', background: 'var(--danger-light)', padding: '10px 12px', borderRadius: 6, marginBottom: 12, fontSize: 13 }}>
+              {actionError}
+            </div>
+          )}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            {failedRuns.map((run) => (
+              <RunCard
+                key={run._id}
+                run={run}
+                onDelete={handleDeleteFailedRun}
+                deleting={deletingRunId === run._id}
+              />
+            ))}
+          </div>
+        </div>
       )}
 
       {/* Recent Runs */}

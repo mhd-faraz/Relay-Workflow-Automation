@@ -12,6 +12,7 @@ import ReactFlow, {
 import 'reactflow/dist/style.css';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Save, Upload, ArrowLeft, Play } from 'lucide-react';
+import ThemeToggle from '../components/ThemeToggle';
 import NodePalette from '../components/builder/NodePalette';
 import PropertiesPanel from '../components/builder/PropertiesPanel';
 import CustomNode from '../components/builder/CustomNode';
@@ -229,7 +230,11 @@ const WorkflowBuilderInner = () => {
 
         <div style={{ width: 1, height: 24, background: 'var(--border)' }} />
 
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 2, maxWidth: 400 }}>
+        <div style={{ flex: 1 }} />
+
+        <ThemeToggle compact />
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 2, maxWidth: 400, flex: '0 1 400px' }}>
           <input
             value={workflowName}
             onChange={(e) => setWorkflowName(e.target.value)}

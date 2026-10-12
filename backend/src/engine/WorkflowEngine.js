@@ -8,7 +8,7 @@ const {
   runCondition,
   runDelay,
   runNotify,
-  runEmailNode,
+  runExpenseClaim,
   runAiNode,
   runApprovalNode,
 } = require('./nodeRunners');
@@ -138,8 +138,11 @@ class WorkflowEngine {
           output = await runNotify(node.config, context);
           break;
 
-        case 'email':
-          output = await runEmailNode(node.config, context);
+        case 'expense_claim':
+          output = await runExpenseClaim(node.config, context, {
+            runId,
+            userId: run.userId,
+          });
           break;
 
         case 'ai':
@@ -151,7 +154,7 @@ class WorkflowEngine {
           break;
 
         case 'approval':
-          await runApprovalNode(node.config, runId, node.id, node.name, context, Approval);
+          output = await runApprovalNode(node.config, runId, node.id, node.name, context, Approval);
           break;
 
         default:

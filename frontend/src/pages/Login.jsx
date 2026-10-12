@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import { Zap, Mail, Lock } from 'lucide-react';
 import { login as loginApi } from '../services/api';
 import { useAuth } from '../context/AuthContext';
+import ThemeToggle from '../components/ThemeToggle';
 
 const Login = () => {
   const navigate = useNavigate();
@@ -35,6 +36,7 @@ const Login = () => {
       justifyContent: 'center',
       background: 'var(--bg-primary)',
     }}>
+      <div className="public-theme-toggle"><ThemeToggle compact /></div>
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}

@@ -1,10 +1,14 @@
 const Workflow = require('../models/Workflow');
 const { v4: uuidv4 } = require('uuid');
+const {
+  upsertBuiltinWorkflows,
+  BUILTIN_WORKFLOW_NAMES,
+} = require('../../seeds/demoWorkflows');
 
 // POST /api/workflows
 const createWorkflow = async (req, res) => {
   try {
-    const { name, description, triggerType, nodes, entryNodeId } = req.body;
+    const { name, description, triggerType, nodes, inputSchema, entryNodeId } = req.body;
 
     const workflow = await Workflow.create({
       userId: req.userId,
@@ -13,6 +17,7 @@ const createWorkflow = async (req, res) => {
       description,
       triggerType: triggerType || 'manual',
       nodes: nodes || [],
+      inputSchema: inputSchema || null,
       entryNodeId: entryNodeId || null,
     });
 
@@ -34,7 +39,19 @@ const listWorkflows = async (req, res) => {
     };
     if (status) filter.status = status;
 
-    const workflows = await Workflow.find(filter).sort({ isTemplate: -1, createdAt: -1 });
+    let workflows = await Workflow.find(filter).sort({ isTemplate: -1, createdAt: -1 });
+    const existingTemplateNames = new Set(
+      workflows.filter((workflow) => workflow.isTemplate).map((workflow) => workflow.name)
+    );
+    const hasMissingBuiltins = BUILTIN_WORKFLOW_NAMES.some(
+      (name) => !existingTemplateNames.has(name)
+    );
+
+    if (hasMissingBuiltins) {
+      await upsertBuiltinWorkflows();
+      workflows = await Workflow.find(filter).sort({ isTemplate: -1, createdAt: -1 });
+    }
+
     res.json({ success: true, data: workflows });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
@@ -65,7 +82,7 @@ const updateWorkflow = async (req, res) => {
       return res.status(400).json({ success: false, error: 'Cannot edit a published workflow' });
     }
 
-    const allowed = ['name', 'description', 'triggerType', 'nodes', 'entryNodeId'];
+    const allowed = ['name', 'description', 'triggerType', 'nodes', 'inputSchema', 'entryNodeId'];
     for (const key of allowed) {
       if (req.body[key] !== undefined) workflow[key] = req.body[key];
     }
@@ -105,6 +122,7 @@ const publishWorkflow = async (req, res) => {
     workflow.webhookSecret = workflow.webhookSecret || uuidv4();
     workflow.publishedDefinition = {
       nodes: workflow.nodes,
+      inputSchema: workflow.inputSchema,
       entryNodeId: workflow.entryNodeId,
       triggerType: workflow.triggerType,
     };

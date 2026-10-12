@@ -35,7 +35,7 @@ Modern businesses often need workflows that combine:
 - business logic and branching
 - human review for high-impact actions
 - durable execution and auditing
-- external integrations such as email, HTTP calls, and webhooks
+- external integrations such as HTTP calls and webhooks
 
 Relay provides a simple orchestration layer to coordinate these parts while keeping execution reliable and traceable.
 
@@ -49,6 +49,8 @@ Relay provides a simple orchestration layer to coordinate these parts while keep
 - Exactly-once style protection for repeat-prone side effects
 - Run tracing with step inputs, outputs, status, and timing
 - JWT-based authentication and role-scoped workflow access
+- Business approval starters for procurement requests, production incidents, order processing, and ticket triage
+- Failed-run cleanup from the dashboard
 - Docker support for a full local stack
 - Seeded demo workflows for quick testing and demos
 
@@ -64,7 +66,6 @@ flowchart LR
     Q --> W[Workflow Worker\nExecution Engine]
     W --> DB
     W --> AI[AI Adapters\nGroq / OpenAI / Gemini]
-    W --> MAIL[Email Adapter\nGmail SMTP]
     W --> HTTP[HTTP / Webhook Nodes]
 ```
 
@@ -100,7 +101,6 @@ This makes the platform suitable for automation workflows where correctness, hum
 | Queue | BullMQ + Redis |
 | Authentication | JWT + bcryptjs |
 | AI providers | Groq, OpenAI, Gemini |
-| Email | Nodemailer |
 | Testing | Jest + Supertest |
 | Containerization | Docker + Docker Compose |
 
@@ -159,7 +159,6 @@ Before running the project locally, make sure you have:
 - MongoDB instance or MongoDB Atlas connection
 - Redis instance or Docker Redis
 - At least one AI provider API key for real execution
-- Optional Gmail app password for email-send nodes
 
 ## Environment variables
 
@@ -177,8 +176,6 @@ AI_PROVIDER=groq
 OPENAI_API_KEY=
 GEMINI_API_KEY=
 GROQ_API_KEY=
-GMAIL_USER=
-GMAIL_APP_PASSWORD=
 JWT_SECRET=change_this_in_production
 MAX_STEPS_PER_RUN=100
 ```
@@ -194,12 +191,28 @@ MAX_STEPS_PER_RUN=100
 | `GROQ_API_KEY` | Conditional | Required when using Groq |
 | `OPENAI_API_KEY` | Conditional | Required when using OpenAI |
 | `GEMINI_API_KEY` | Conditional | Required when using Gemini |
-| `GMAIL_USER` | Optional | Gmail account for outbound email |
-| `GMAIL_APP_PASSWORD` | Optional | App password for Gmail SMTP |
 | `JWT_SECRET` | Yes | Secret for signing and verifying JWTs |
 | `MAX_STEPS_PER_RUN` | Optional | Maximum number of workflow steps per run |
 
 > Important: never commit real secrets or production credentials into version control.
+
+### Try a business workflow
+
+Open **Workflows** and choose **Purchase Request Approval** or **Production Incident Escalation** under **Business approval workflows**. Their example inputs are ready to trigger; purchase requests above INR 50,000 and critical incidents pause for a human decision in **Approvals**. After approval, the workflow makes a POST and shows its response in the run trace. JSONPlaceholder simulates the downstream procurement/incident system; it does not persist a real company record. Use fictional data only because the demo POST sends its payload to this public endpoint. Replace its URL with an authorized company endpoint to perform a real handoff.
+
+For repository metrics, **GitHub Repository Health Check** accepts any public repository in `owner` and `repo` fields, e.g. `{"owner":"facebook","repo":"react"}`.
+
+Failed runs can be removed from the dashboard; their saved steps and approval records are removed with them. Other run states remain available for audit.
+
+Signup and login validate email address syntax. This does not prove that an inbox exists or belongs to the user; that requires a confirmation email/OTP.
+
+### Ready-to-run workflows
+
+On backend startup, Relay idempotently upserts six shared, published workflows: **GitHub Repository Health Check**, **Purchase Request Approval**, **Production Incident Escalation**, **E-Commerce Order Processing**, **Support Ticket Router**, and **Employee Expense Reimbursement**. Every signed-in user sees the same ready-to-run workflows; each run, approval, and expense record is scoped to the user who triggered it. The upsert does not delete run history or rotate existing webhook secrets. It removes the retired shared email workflow without touching run history. You can also run `npm run seed` from `backend/` to provision them manually. Each published workflow has **View Flow** beside **Trigger Run**, and **New Workflow** remains available for custom workflows.
+
+For the e-commerce and support examples, configure an AI provider before triggering them. High-value orders and high-urgency tickets pause for a human decision in **Approvals**. Purchase and incident examples need no AI provider. Their approval conditions and example inputs appear in the trigger dialog. Demo handoffs use JSONPlaceholder, not a real company system; use fictional data and replace the URL with an authorized integration for real actions.
+
+**Employee Expense Reimbursement** is a persistent, database-backed workflow. Claims up to INR 5,000 are auto-approved; higher claims pause in **Approvals** for a human decision. Approved claims are written to the user's MongoDB-backed expense ledger with the run ID, claim details, authenticated reviewer's email, and decision timestamp. Duplicate claim references for the same account are rejected. The **Save Expense to Relay Ledger** step in the run trace shows the durable record ID and status. This is a real persistent record inside Relay, not a connection to a company's external ERP/accounting platform or a substitute for an organization's role-based manager approval policy.
 
 ## Local development setup
 
@@ -357,7 +370,6 @@ Ensure these are configured before release:
 - Valid Redis host and port
 - Correct `JWT_SECRET`
 - AI provider API keys
-- Optional Gmail SMTP credentials for email nodes
 - Allowed frontend origins in CORS configuration
 
 ## Deployment guide
@@ -384,7 +396,6 @@ flowchart LR
     API --> Q[(Redis / BullMQ)]
     Q --> W[Workflow Worker]
     W --> AI[AI Providers\nGroq / OpenAI / Gemini]
-    W --> MAIL[Email Service\nGmail SMTP]
 ```
 
 ### Recommended deployment setup
@@ -425,8 +436,6 @@ AI_PROVIDER=groq
 OPENAI_API_KEY=
 GEMINI_API_KEY=
 GROQ_API_KEY=
-GMAIL_USER=
-GMAIL_APP_PASSWORD=
 JWT_SECRET=change_this_in_production
 MAX_STEPS_PER_RUN=100
 ```
@@ -437,8 +446,7 @@ MAX_STEPS_PER_RUN=100
 2. Configure Redis and set `REDIS_HOST` and `REDIS_PORT` appropriately.
 3. Set a long, secure `JWT_SECRET` value.
 4. Configure the required AI provider key for the selected `AI_PROVIDER`.
-5. Add Gmail SMTP credentials only if email approval workflows are enabled.
-6. Keep CORS and allowed origins limited to your trusted frontend domain.
+5. Keep CORS and allowed origins limited to your trusted frontend domain.
 7. Run the app health check and verify the `/health` endpoint responds successfully.
 8. Test workflow triggering and approval flow before production use.
 
@@ -504,8 +512,7 @@ npm test
 
 ## Known Limitations
 
-- **Single shared email identity.** All *Send Email* actions go out from one configured Gmail account (similar to a company `noreply@`). Per-user sending would require Google OAuth and per-user token storage.
-- **No per-user quotas on side-effecting nodes.** A malicious account could trigger many email-sending runs; production use would need per-user limits.
+- **No per-user quotas on side-effecting nodes.** A malicious account could trigger many external HTTP calls; production use would need per-user limits.
 - **Small node library.** Six node types cover the demonstrated use cases; tools like n8n ship hundreds of integrations.
 - **AI quality depends on prompts.** Schema validation catches malformed output, but a weak prompt can still yield a valid-but-poor answer. This is inherent to LLM-backed systems.
 - **Cold starts on free hosting tiers.** The first request after idle time may be slow.
@@ -515,7 +522,7 @@ npm test
 ## Roadmap
 
 - [ ] Live, node-by-node highlighting on the canvas while a run executes
-- [ ] OAuth-based per-user email and Slack sending
+- [ ] Slack sending
 - [ ] Richer node library (Slack, Google Sheets, database writes)
 - [ ] Per-user workflow quotas and billing hooks
 - [ ] CI pipeline (lint + tests on every pull request)
